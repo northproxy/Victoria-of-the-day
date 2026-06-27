@@ -11,6 +11,9 @@ class Config:
     IG_USER_ID = os.getenv("IG_USER_ID")
     IG_ACCESS_TOKEN = os.getenv("IG_ACCESS_TOKEN")
 
+    TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+    TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
+
     TIMEZONE = os.getenv("TIMEZONE", "Europe/Vienna")
     DRY_RUN = os.getenv("DRY_RUN", "true").lower() == "true"
 

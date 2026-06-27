@@ -6,6 +6,7 @@ import requests
 from config import Config, validate_config
 from notion_client import NotionClient
 from instagram_client import InstagramClient
+from telegram_client import TelegramClient
 
 
 def validate_image_url(image_url: str):
@@ -41,10 +42,21 @@ def build_caption(post: dict) -> str:
     return caption or hashtags
 
 
+def get_telegram() -> TelegramClient | None:
+    """Returns a TelegramClient if credentials are configured, otherwise None."""
+    if Config.TELEGRAM_BOT_TOKEN and Config.TELEGRAM_CHAT_ID:
+        return TelegramClient(
+            bot_token=Config.TELEGRAM_BOT_TOKEN,
+            chat_id=Config.TELEGRAM_CHAT_ID,
+        )
+    return None
+
+
 def main():
     validate_config()
 
     today = get_today_date()
+    telegram = get_telegram()
 
     notion = NotionClient(
         token=Config.NOTION_TOKEN,
@@ -57,11 +69,17 @@ def main():
     post = notion.find_ready_post_by_date(today)
 
     if not post:
-        print("No Ready post found for today.")
+        msg = f"⚠️ No ready post found for {today}."
+        print(msg)
+        if telegram:
+            telegram.send(msg)
         return
 
     if post.get("ig_post_id"):
-        print(f"Post already published (IG Post ID: {post['ig_post_id']}). Skipping.")
+        msg = f"⚠️ Post already published (IG Post ID: {post['ig_post_id']}). Skipping."
+        print(msg)
+        if telegram:
+            telegram.send(msg)
         return
 
     print("Ready post found:")
@@ -74,9 +92,11 @@ def main():
         validate_image_url(post["image_url"])
         print("  Image URL validation: OK")
     except RuntimeError as e:
-        print(f"  Image URL validation FAILED: {e}")
+        msg = f"❌ Error: Day {post['day']} — {post['title']}\n{e}"
+        print(msg)
         notion.mark_as_error(post["page_id"], str(e))
-        print("  Notion status → error")
+        if telegram:
+            telegram.send(msg)
         return
 
     final_caption = build_caption(post)
@@ -84,8 +104,10 @@ def main():
     print(final_caption)
 
     if Config.DRY_RUN:
-        print("\nDRY_RUN=true — nothing will be published to Instagram.")
-        print("Notion status is NOT changed in dry-run mode.")
+        msg = f"🧪 DRY RUN: Day {post['day']} — {post['title']}\nWould publish but DRY_RUN=true."
+        print(msg)
+        if telegram:
+            telegram.send(msg)
         return
 
     instagram = InstagramClient(
@@ -98,13 +120,20 @@ def main():
         ig_post_id = instagram.publish(post["image_url"], final_caption)
 
         notion.mark_as_posted(post["page_id"], ig_post_id)
-        print(f"Notion status → posted")
-        print(f"Done: {post['title']}")
+        print("Notion status → posted")
+
+        msg = f"✅ Posted: Day {post['day']} — {post['title']}"
+        print(msg)
+        if telegram:
+            telegram.send(msg)
 
     except Exception as error:
         notion.mark_as_error(post["page_id"], str(error))
-        print(f"Publishing error: {post['title']} — {error}")
-        print("Notion status → error")
+
+        msg = f"❌ Error: Day {post['day']} — {post['title']}\n{error}"
+        print(msg)
+        if telegram:
+            telegram.send(msg)
 
 
 if __name__ == "__main__":
