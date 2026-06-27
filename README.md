@@ -17,7 +17,8 @@ Stack:
 
 Publish one daily Instagram image post from Notion and update the Notion status after publishing.
 
-UPDATE 27 Juni 2026
+
+## UPDATE 27 Juni 2026
 
 What's Built
 
