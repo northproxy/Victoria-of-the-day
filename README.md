@@ -1,87 +1,152 @@
-## Victoria-of-the-day
+# Victoria of the Day
 
-The main idea is to show a new image, symbol, object, place, character, word, or meme-like association connected to the name Victoria / Vika every day.
+Every day, one image connected to the name Victoria / Vika — through victory, culture, history, geography, symbols, memes, and linguistic associations.
 
 Automated Instagram publisher for the **Victoria-of-the-day** project.
 
-Stack:
+## Stack
 
-- Notion as content database
-- Public image URLs hosted on personal server
-- Python publishing script
-- GitHub Actions scheduler
-- Instagram Graph API
-- Optional Telegram notifications
+```
+Notion → GitHub Actions → Python → Instagram Graph API → Notion update → Telegram
+```
 
-## MVP Goal
-
-Publish one daily Instagram image post from Notion and update the Notion status after publishing.
-
-
-## UPDATE 27 Juni 2026
-
-What's Built
-
-A fully automated Instagram publishing pipeline that runs daily without any manual intervention.
-
-Stack
-
-Notion → GitHub Actions → Python → Instagram Graph API → Notion update
-
-What's Done
-
-Infrastructure
-- GitHub repository set up and connected to local VSCode
-- GitHub Actions workflow running on a daily schedule (09:00 Vienna time)
-- All secrets stored securely in GitHub Secrets
-Notion
-- Database created with all required columns including Status, Error, IG Post ID
-- First 10 posts created with images, captions, and dates
-- Notion Integration connected
-Python Scripts
-- config.py — loads all environment variables and validates them
-- notion_client.py — reads today's ready post, writes back status, post ID, and errors
-- instagram_client.py — creates media container, waits for processing, publishes
-- main.py — orchestrates the full pipeline
-Features working
-- Finds today's post by date and status
-- Validates image URL before publishing
-- Builds caption from title, text, and hashtags
-- Publishes image to Instagram
-- Saves IG Post ID back to Notion
-- Marks post as posted or error in Notion
-- Prevents duplicate publishing
-- Dry-run mode for safe testing
----
-
-What's Been Tested
-
-Test
-Result
-Notion read
-✅
-Image URL validation
-✅
-Caption builder
-✅
-mark_as_error() write to Notion
-✅
-mark_as_posted() write to Notion
-✅
-Real Instagram publish
-✅
-Duplicate publish guard
-✅
-GitHub Actions manual trigger
-✅
-GitHub Actions daily schedule
-✅
+| Component | Purpose |
+|-----------|---------|
+| Notion | Content database and editorial calendar |
+| Personal server | Public image hosting |
+| GitHub Actions | Daily scheduler (09:00 Vienna time) |
+| Python | Publishing logic |
+| Instagram Graph API | Automatic Instagram publishing |
+| Telegram | Success and error notifications |
 
 ---
 
-What's Next
+## How It Works
 
-- Telegram notifications — optional but useful for monitoring
-- Token refresh — Instagram access token expires in ~60 days
-- Content preparation — fill Notion with posts for the next 30+ days
-- Image hosting check — verify all image URLs are reachable
+Every day at 09:00 Vienna time, GitHub Actions runs the Python script which:
+
+1. Connects to Notion and finds today's post where `Status = ready`
+2. Validates the image URL
+3. Builds the caption from title, text, and hashtags
+4. Publishes the image to Instagram
+5. Saves the Instagram Post ID back to Notion
+6. Sets `Status → posted`
+7. Sends a Telegram notification
+
+If anything fails, `Status → error` is written to Notion with the error message, and a ❌ Telegram notification is sent.
+
+---
+
+## Project Structure
+
+```
+Victoria-of-the-day/
+│
+├── .github/
+│   └── workflows/
+│       └── publish.yml          # Daily scheduled workflow
+│
+├── src/
+│   ├── main.py                  # Main orchestration script
+│   ├── notion_client.py         # Notion read and write
+│   ├── instagram_client.py      # Instagram Graph API publishing
+│   ├── telegram_client.py       # Telegram notifications
+│   └── config.py                # Environment variable loader
+│
+├── requirements.txt
+├── .env.example
+├── .gitignore
+├── project.md
+└── README.md
+```
+
+---
+
+## Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `NOTION_TOKEN` | Yes | Notion integration token |
+| `NOTION_DATABASE_ID` | Yes | ID of the Notion database |
+| `IG_USER_ID` | Yes | Instagram account numeric ID |
+| `IG_ACCESS_TOKEN` | Yes | Instagram Graph API access token |
+| `TELEGRAM_BOT_TOKEN` | No | Telegram bot token |
+| `TELEGRAM_CHAT_ID` | No | Telegram chat ID for notifications |
+| `TIMEZONE` | No | Default: `Europe/Vienna` |
+| `DRY_RUN` | No | Default: `true`. Set to `false` to publish |
+
+For local development copy `.env.example` to `.env` and fill in the values.
+For production all variables are stored as GitHub Secrets.
+
+---
+
+## Notion Database
+
+The Notion database contains one row per post with these columns:
+
+| Column | Type | Description |
+|--------|------|-------------|
+| Day | Number | Post number (1–365) |
+| Publish Date | Date | Scheduled publish date |
+| Title | Text | Short post title |
+| Category | Select | Thematic category |
+| Caption | Text | Instagram caption text |
+| Hashtags | Text | Hashtags |
+| Image URL | URL | Public image URL on personal server |
+| Status | Select | `draft / ready / posted / error / skipped` |
+| IG Post ID | Text | Instagram post ID after publishing |
+| Error | Text | Error message if publishing failed |
+
+The automation only publishes posts where `Status = ready` and `Publish Date = today`.
+
+---
+
+## Manual Controls
+
+| Action | How |
+|--------|-----|
+| Prepare a post | Set `Status → ready` |
+| Pause a post | Set `Status → draft` or `skipped` |
+| Retry a failed post | Fix the issue, set `Status → ready`, clear `Error` |
+| Skip today | Leave no post with `ready` status for today |
+| Trigger manually | GitHub Actions → Run workflow |
+
+---
+
+## Telegram Notifications
+
+| Event | Message |
+|-------|---------|
+| Success | `✅ Posted: Day 1 — V-sign` |
+| No post found | `⚠️ No ready post found for 2026-06-27.` |
+| Error | `❌ Error: Day 1 — V-sign` + error details |
+| Dry run | `🧪 DRY RUN: Day 1 — V-sign` |
+
+---
+
+## Maintenance
+
+**Instagram access token** expires every 60 days. When you receive a ❌ error about an invalid token:
+1. Go to [Meta Developer Dashboard](https://developers.facebook.com)
+2. Navigate to your app → Instagram → API Setup
+3. Generate a new access token
+4. Update `IG_ACCESS_TOKEN` in GitHub Secrets
+
+---
+
+## Status
+
+| Feature | Status |
+|---------|--------|
+| Notion read | ✅ Working |
+| Image URL validation | ✅ Working |
+| Caption builder | ✅ Working |
+| Instagram publishing | ✅ Working |
+| Notion write-back | ✅ Working |
+| Duplicate publish guard | ✅ Working |
+| Dry-run mode | ✅ Working |
+| GitHub Actions daily schedule | ✅ Working |
+| Telegram notifications | ✅ Working |
+| Token refresh automation | 🔜 Planned |
+| Carousel publishing | 🔜 Planned |
+| Analytics | 🔜 Planned |
