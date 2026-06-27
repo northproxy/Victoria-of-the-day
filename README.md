@@ -4,6 +4,8 @@ Every day, one image connected to the name Victoria / Vika — through victory, 
 
 Automated Instagram publisher for the **Victoria-of-the-day** project.
 
+Follow the project on Instagram: @kira_starlynne
+
 ## Stack
 
 ```
