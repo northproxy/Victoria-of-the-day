@@ -149,6 +149,6 @@ The automation only publishes posts where `Status = ready` and `Publish Date = t
 | Dry-run mode | ✅ Working |
 | GitHub Actions daily schedule | ✅ Working |
 | Telegram notifications | ✅ Working |
-| Token refresh automation | 🔜 Planned |
+| Token refresh automation | ✅ Working |
 | Carousel publishing | 🔜 Planned |
 | Analytics | 🔜 Planned |
