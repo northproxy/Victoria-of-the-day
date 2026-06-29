@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pytz
 import requests
@@ -7,6 +7,30 @@ from config import Config, validate_config
 from notion_client import NotionClient
 from instagram_client import InstagramClient
 from telegram_client import TelegramClient
+
+# Token expiry as Unix timestamp - update this when you refresh the token
+IG_TOKEN_EXPIRES_AT = 1787670428
+
+TOKEN_WARNING_DAYS = 14  # Warn this many days before expiry
+
+
+def check_token_expiry(telegram: "TelegramClient | None"):
+    """Warn via Telegram if the token is expiring soon."""
+    now = datetime.now(timezone.utc).timestamp()
+    days_left = (IG_TOKEN_EXPIRES_AT - now) / 86400
+
+    if days_left < 0:
+        msg = "🔴 Instagram access token has EXPIRED. Please renew it immediately."
+        print(msg)
+        if telegram:
+            telegram.send(msg)
+    elif days_left <= TOKEN_WARNING_DAYS:
+        msg = f"⚠️ Instagram access token expires in {int(days_left)} days. Please renew it soon."
+        print(msg)
+        if telegram:
+            telegram.send(msg)
+    else:
+        print(f"  Token valid for {int(days_left)} more days.")
 
 
 def validate_image_url(image_url: str):
@@ -42,8 +66,7 @@ def build_caption(post: dict) -> str:
     return caption or hashtags
 
 
-def get_telegram() -> TelegramClient | None:
-    """Returns a TelegramClient if credentials are configured, otherwise None."""
+def get_telegram() -> "TelegramClient | None":
     if Config.TELEGRAM_BOT_TOKEN and Config.TELEGRAM_CHAT_ID:
         return TelegramClient(
             bot_token=Config.TELEGRAM_BOT_TOKEN,
@@ -57,6 +80,9 @@ def main():
 
     today = get_today_date()
     telegram = get_telegram()
+
+    # Check token expiry every day
+    check_token_expiry(telegram)
 
     notion = NotionClient(
         token=Config.NOTION_TOKEN,
