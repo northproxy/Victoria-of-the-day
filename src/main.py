@@ -55,6 +55,8 @@ def get_today_date() -> str:
     timezone = pytz.timezone(Config.TIMEZONE)
     return datetime.now(timezone).date().isoformat()
 
+DEFAULT_HASHTAGS = "#VictoriaOfTheDay #Victoria"
+
 
 def build_caption(post: dict) -> str:
     caption = post.get("caption", "").strip()
