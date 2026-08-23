@@ -8,8 +8,6 @@ from notion_client import NotionClient
 from instagram_client import InstagramClient
 from telegram_client import TelegramClient
 
-# Token expiry as Unix timestamp - update this when you refresh the token
-IG_TOKEN_EXPIRES_AT = 1787670428
 
 TOKEN_WARNING_DAYS = 14  # Warn this many days before expiry
 
@@ -17,7 +15,7 @@ TOKEN_WARNING_DAYS = 14  # Warn this many days before expiry
 def check_token_expiry(telegram: "TelegramClient | None"):
     """Warn via Telegram if the token is expiring soon."""
     now = datetime.now(timezone.utc).timestamp()
-    days_left = (IG_TOKEN_EXPIRES_AT - now) / 86400
+    days_left = (int(Config.IG_TOKEN_EXPIRES_AT) - now) / 86400
 
     if days_left < 0:
         msg = "🔴 Instagram access token has EXPIRED. Please renew it immediately."
