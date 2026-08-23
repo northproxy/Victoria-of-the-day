@@ -59,13 +59,12 @@ DEFAULT_HASHTAGS = "#VictoriaOfTheDay #Victoria"
 
 
 def build_caption(post: dict) -> str:
-    caption = post.get("caption", "").strip()
-    hashtags = post.get("hashtags", "").strip()
+    title = post.get("title", "").strip()
 
-    if caption and hashtags:
-        return f"{caption}\n\n{hashtags}"
+    if title:
+        return f"{title}\n\n{DEFAULT_HASHTAGS}"
 
-    return caption or hashtags
+    return DEFAULT_HASHTAGS
 
 
 def get_telegram() -> "TelegramClient | None":
