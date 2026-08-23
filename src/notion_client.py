@@ -71,7 +71,7 @@ class NotionClient:
 
         return {
             "page_id": page.get("id"),
-            "title": self._get_title(properties, "Title"),
+            "title": self._get_text(properties, "Title"),
             "day": self._get_number(properties, "Day"),
             "publish_date": self._get_date(properties, "Publish Date"),
             "category": self._get_select(properties, "Category"),
