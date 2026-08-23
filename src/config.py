@@ -10,6 +10,7 @@ class Config:
 
     IG_USER_ID = os.getenv("IG_USER_ID")
     IG_ACCESS_TOKEN = os.getenv("IG_ACCESS_TOKEN")
+    IG_TOKEN_EXPIRES_AT = os.getenv("IG_TOKEN_EXPIRES_AT")
 
     TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
     TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
