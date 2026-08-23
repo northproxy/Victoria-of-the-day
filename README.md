@@ -29,7 +29,7 @@ Every day at 09:00 Vienna time, GitHub Actions runs the Python script which:
 
 1. Connects to Notion and finds today's post where `Status = ready`
 2. Validates the image URL
-3. Builds the caption from title, text, and hashtags
+3. Builds the caption from `Title` and adds `#VictoriaOfTheDay #Victoria`
 4. Publishes the image to Instagram
 5. Saves the Instagram Post ID back to Notion
 6. Sets `Status → posted`
@@ -71,7 +71,8 @@ Victoria-of-the-day/
 | `NOTION_TOKEN` | Yes | Notion integration token |
 | `NOTION_DATABASE_ID` | Yes | ID of the Notion database |
 | `IG_USER_ID` | Yes | Instagram account numeric ID |
-| `IG_ACCESS_TOKEN` | Yes | Instagram Graph API access token |
+| `IG_ACCESS_TOKEN` | Yes | Instagram Graph API long-lived access token |
+| `IG_TOKEN_EXPIRES_AT` | Yes | Unix timestamp when the Instagram access token expires |
 | `TELEGRAM_BOT_TOKEN` | No | Telegram bot token |
 | `TELEGRAM_CHAT_ID` | No | Telegram chat ID for notifications |
 | `TIMEZONE` | No | Default: `Europe/Vienna` |
@@ -90,10 +91,10 @@ The Notion database contains one row per post with these columns:
 |--------|------|-------------|
 | Day | Number | Post number (1–365) |
 | Publish Date | Date | Scheduled publish date |
-| Title | Text | Short post title |
+| Title | Text (`rich_text`) | Instagram caption text |
 | Category | Select | Thematic category |
-| Caption | Text | Instagram caption text |
-| Hashtags | Text | Hashtags |
+| Caption | Text | Legacy field; currently not used for publishing |
+| Hashtags | Text | Legacy field; currently not used for publishing |
 | Image URL | URL | Public image URL on personal server |
 | Status | Select | `draft / ready / posted / error / skipped` |
 | IG Post ID | Text | Instagram post ID after publishing |
@@ -128,11 +129,18 @@ The automation only publishes posts where `Status = ready` and `Publish Date = t
 
 ## Maintenance
 
-**Instagram access token** expires every 60 days. When you receive a ❌ error about an invalid token:
-1. Go to [Meta Developer Dashboard](https://developers.facebook.com)
-2. Navigate to your app → Instagram → API Setup
-3. Generate a new access token
-4. Update `IG_ACCESS_TOKEN` in GitHub Secrets
+**Instagram access token** is a long-lived token that expires after roughly 60 days.
+
+The publisher checks the expiry timestamp on every run. When 14 days or fewer remain, it sends a Telegram warning.
+
+To renew the token:
+1. Generate a short-lived User Access Token in Meta Graph API Explorer with the required Instagram permissions.
+2. Exchange it for a long-lived token.
+3. Verify the new token in Access Token Debugger.
+4. Update `IG_ACCESS_TOKEN` in GitHub Secrets.
+5. Update `IG_TOKEN_EXPIRES_AT` in GitHub Secrets with the new Unix expiry timestamp.
+
+Token renewal is currently manual; expiry monitoring and Telegram warnings are automatic.
 
 ---
 
@@ -149,6 +157,7 @@ The automation only publishes posts where `Status = ready` and `Publish Date = t
 | Dry-run mode | ✅ Working |
 | GitHub Actions daily schedule | ✅ Working |
 | Telegram notifications | ✅ Working |
-| Token refresh automation | ✅ Working |
+| Token expiry monitoring | ✅ Working |
+| Token renewal | 🛠️ Manual |
 | Carousel publishing | 🔜 Planned |
 | Analytics | 🔜 Planned |

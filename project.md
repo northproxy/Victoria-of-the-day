@@ -6,10 +6,11 @@ Victoriaoftheday is an automated Instagram publishing project.
 The project publishes one image per day, each connected to the name Victoria / Vika through language, culture, history, geography, symbolism, mythology, pop culture, or meme-like associations.
 Each Instagram post contains:
 - one image;
-- a short title or caption;
-- a very short explanation;
-- optional hashtags.
+- one caption built from the Notion `Title` field;
+- fixed hashtags: `#VictoriaOfTheDay #Victoria`.
 The goal is to create a daily visual series where every post is a small cultural, linguistic, or symbolic discovery around the name Victoria / Vika.
+
+Current status: production. Daily publishing is working through GitHub Actions, Notion, Instagram Graph API, and Telegram notifications.
 ---
 
 2. Core Concept
@@ -67,12 +68,13 @@ The Python script runs daily and performs the following workflow:
 1. Connect to Notion.
 2. Find the post scheduled for today.
 3. Check that the post status is Ready.
-4. Read the image URL, caption, title, and hashtags.
-5. Publish the image to Instagram.
-6. Update the Notion status to Posted.
-7. Save the Instagram post ID.
-8. If an error occurs, update the Notion status to Error.
-9. Optionally send a Telegram notification.
+4. Read the image URL and `Title`.
+5. Build the Instagram caption as `Title` + fixed hashtags.
+6. Publish the image to Instagram.
+7. Update the Notion status to Posted.
+8. Save the Instagram post ID.
+9. If an error occurs, update the Notion status to Error.
+10. Optionally send a Telegram notification.
 ---
 
 5. Notion Database Structure
@@ -100,7 +102,7 @@ Date
 2026-01-01
 Yes
 Title
-Text
+Text (`rich_text`)
 V-sign
 Yes
 Category
@@ -113,11 +115,11 @@ Direct/symbolic
 No
 Caption
 Text
-The shortest Victoria.
-Yes
+Legacy / not used for publishing
+No
 Hashtags
 Text
-#Victoria #Vika #365Victorias
+Legacy / not used for publishing
 No
 Image URL
 URL
@@ -264,6 +266,7 @@ NOTION_DATABASE_ID=
 
 IG_USER_ID=
 IG_ACCESS_TOKEN=
+IG_TOKEN_EXPIRES_AT=
 
 TELEGRAM_BOT_TOKEN=
 TELEGRAM_CHAT_ID=
@@ -276,6 +279,26 @@ DRY_RUN=false
 
 ```
 
+### Instagram token expiry tracking
+
+The current access token is stored in the GitHub Secret `IG_ACCESS_TOKEN`.
+
+The token expiry Unix timestamp is stored separately in:
+
+```text
+IG_TOKEN_EXPIRES_AT
+```
+
+`src/config.py` reads this value from the environment, and `src/main.py` checks it on every run. Telegram sends a warning when 14 days or fewer remain.
+
+Token renewal is currently manual. After renewing the Meta long-lived token, update both GitHub Secrets:
+
+```text
+IG_ACCESS_TOKEN
+IG_TOKEN_EXPIRES_AT
+```
+
+
 ---
 
 11. .env.example
@@ -287,6 +310,7 @@ NOTION_DATABASE_ID=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 IG_USER_ID=1234567890
 IG_ACCESS_TOKEN=EAAB...
+IG_TOKEN_EXPIRES_AT=1792673060
 
 TELEGRAM_BOT_TOKEN=123456:ABCDEF
 TELEGRAM_CHAT_ID=123456789
@@ -311,7 +335,7 @@ name: Publish daily Instagram post
 
 on:
   schedule:
-    - cron: "0 8 * * *"
+    - cron: "0 7 * * *"
   workflow_dispatch:
 
 jobs:
@@ -323,6 +347,7 @@ jobs:
       NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
       IG_USER_ID: ${{ secrets.IG_USER_ID }}
       IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+      IG_TOKEN_EXPIRES_AT: ${{ secrets.IG_TOKEN_EXPIRES_AT }}
       TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
       TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
       TIMEZONE: Europe/Vienna
@@ -373,11 +398,7 @@ def main():
     try:
         validate_post(post)
 
-        caption = build_caption(
-            title=post["title"],
-            caption=post["caption"],
-            hashtags=post["hashtags"]
-        )
+        caption = build_caption(post)
 
         if DRY_RUN:
             notify(f"DRY RUN: would publish {post['title']}")
@@ -411,38 +432,21 @@ def main():
 
 14. Caption Format
 
-Recommended Instagram caption format:
+Current Instagram caption format:
 ```
-{Caption}
+{Title}
 
-{Hashtags}
-
+#VictoriaOfTheDay #Victoria
 ```
+
 Example:
 ```
-The shortest Victoria.
+Saint Victoria of the Missing Charger
 
-#Victoria #Vika #365Victorias
-
+#VictoriaOfTheDay #Victoria
 ```
-Alternative format:
-```
-Day {Day}: {Title}
 
-{Caption}
-
-{Hashtags}
-
-```
-Example:
-```
-Day 1: V-sign
-
-The shortest Victoria.
-
-#Victoria #Vika #365Victorias
-
-```
+The Notion `Caption` and `Hashtags` properties are currently not used by the publisher.
 
 ---
 
@@ -454,7 +458,7 @@ Before publishing, the script should validate that:
 - Status is ready;
 - Image URL is not empty;
 - Image URL starts with https://;
-- Caption is not empty;
+- Title is not empty;
 - IG Post ID is empty;
 - image URL returns a successful HTTP response;
 - image content type looks like an image;
@@ -549,7 +553,8 @@ Edit Publish Date
 The first working version should include:
 - Notion database connection;
 - query today’s ready post;
-- read image URL and caption;
+- read image URL and Title;
+- build caption from Title + fixed hashtags;
 - publish one image post to Instagram;
 - update Notion status;
 - GitHub Actions scheduled run;
@@ -592,7 +597,7 @@ Phase 1 — Setup
 - Add test rows to Notion.
 - Create Meta Developer App.
 - Get Instagram access token.
-- Add GitHub Secrets.
+- Add GitHub Secrets, including `IG_TOKEN_EXPIRES_AT`.
 
 Phase 2 — Local Python Prototype
 
