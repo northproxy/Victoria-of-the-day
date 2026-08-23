@@ -240,6 +240,29 @@ OpenAI API billing is separate from a ChatGPT subscription. Before
 implementation, create/configure the API project and decide on an
 appropriate model and spending limit.
 
+### API Cost and Billing
+
+OpenAI API usage is billed separately from ChatGPT subscriptions such as ChatGPT Plus.
+
+New API accounts use prepaid billing. Credits are purchased in advance and then deducted according to actual API usage.
+
+Current billing basics:
+
+- minimum initial credit purchase: **$5**;
+- default suggested purchase: **$10**;
+- purchased credits are valid for **1 year**;
+- purchased credits are generally **non-refundable**;
+- Auto Recharge is available and can automatically add credits when the balance falls below a chosen threshold;
+- Auto Recharge can be disabled to keep spending fully manual;
+- API usage is charged according to the selected model and the number of input/output tokens processed.
+
+For this project, the recommended initial setup is:
+
+```text
+Initial balance: $5
+Auto Recharge: OFF
+Usage: manual content-generation runs only
+
 ------------------------------------------------------------------------
 
 ## 10. Proposed Manual Workflow
@@ -259,21 +282,13 @@ Find next 3 rows
 where:
     Publish Date exists
     Title is empty
-
         ↓
-
 Generate content
-
         ↓
-
 Validate structured response
-
         ↓
-
 Write allowed fields to Notion
-
         ↓
-
 STOP
 ```
 
