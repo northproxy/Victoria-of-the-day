@@ -66,6 +66,9 @@ class NotionClient:
     def _parse_post(self, page: dict):
         properties = page.get("properties", {})
 
+        print("TITLE PROPERTY DEBUG:")
+        print(properties.get("Title"))
+
         return {
             "page_id": page.get("id"),
             "title": self._get_title(properties, "Title"),
